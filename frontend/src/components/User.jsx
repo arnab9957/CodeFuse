@@ -6,7 +6,7 @@ const User = (props) => {
 
   return (
     <div className="flex flex-col gap-1 text-white" >
-      <div className="relative">
+      <div className="relative w-fit">
         <Avatar name={props.username} size='60' className="rounded-xl " />
         <span
           className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border border-zinc-900"
