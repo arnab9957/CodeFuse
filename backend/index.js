@@ -6,7 +6,7 @@ import path from 'node:path';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import userRoutes from './routes/userRoutes.js';
+import cookieParser from "cookie-parser"
 
 dotenv.config();
 
@@ -17,10 +17,17 @@ app.use(cors({
   origin: "*",
 }));
 
+app.use(cookieParser())
+app.use(express.json({ limit: '16kb' }))
+app.use(express.urlencoded({ extended: true, limit: '16kb' }))
+app.use(express.static('public'))
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log('MongoDB connection error:', err));
+  .catch(err => console.error('MongoDB connection error:', err));
+
+
 
 const server = createServer(app);
 const io = new Server(server, {
@@ -30,6 +37,10 @@ const io = new Server(server, {
   },
 });
 
+
+import userRoutes from './routes/userRoutes.js';
+
+app.use('/api/users', userRoutes);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
