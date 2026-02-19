@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import editorimg from "../assets/editor.svg";
 import User from "../components/User";
-import Editor from "../components/Editor";
+import CodeEditor from "../components/Editor";
 import CodeMirrorEditor from "../components/CodeMirrorEditor";
 import SessionManager from "../components/SessionManager";
 import AuthModal from "../components/AuthModal";
@@ -12,6 +12,11 @@ const EditorPage = () => {
   const [users, setUsers] = useState([]);
   const [showSessionManager, setShowSessionManager] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [socketRef, setSocketRef] = useState(null);
+
+  const [joinRequests, setJoinRequests] = useState([]);
+
   const { roomId } = useParams();
   const navigate = useNavigate();
 
@@ -25,6 +30,16 @@ const EditorPage = () => {
     await navigator.clipboard.writeText(link);
     toast.success("Share link copied!");
   };
+  const kickUser = (socketId) => {
+    if (!socketRef) return;
+
+    if (window.confirm("Are you sure you want to remove this user?")) {
+      socketRef.emit("remove-user", {
+        roomId,
+        socketId,
+      });
+    }
+  };
 
   const handleLeave = () => {
     navigate("/");
@@ -32,6 +47,55 @@ const EditorPage = () => {
 
   return (
     <div className="flex h-screen bg-zinc-950">
+      {isAdmin && joinRequests.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl p-4 w-72">
+          <h3 className="text-white font-semibold mb-3">Join Requests</h3>
+
+          {joinRequests.map((req) => (
+            <div
+              key={req.socketId}
+              className="flex items-center justify-between mb-2 text-sm"
+            >
+              <span className="text-zinc-300">{req.username}</span>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    socketRef.emit("approve-user", {
+                      roomId,
+                      socketId: req.socketId,
+              
+                    });
+
+                    setJoinRequests((prev) =>
+                      prev.filter((r) => r.socketId !== req.socketId),
+                    );
+                  }} className="bg-lime-500 rounded-md p-2 font-bold"
+                >
+                  Allow
+                </button>
+
+                <button
+                  onClick={() => {
+                    socketRef.emit("deny-user", {
+                      roomId,
+                      socketId: req.socketId,
+                    });
+
+                    setJoinRequests((prev) =>
+                      prev.filter((r) => r.socketId !== req.socketId),
+                    );
+                  }}
+                  className="bg-red-500 rounded-md p-2 font-bold"
+                >
+                  Deny
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* //left bar */}
       <div className="bg-linear-to-b from-zinc-900 to-zinc-950 w-80 p-6 flex flex-col h-screen border-r border-zinc-800 shadow-xl">
         <div>
@@ -62,9 +126,12 @@ const EditorPage = () => {
             <div className="usersinfo flex flex-wrap gap-4">
               {users.map((user) => (
                 <User
-                  key={user.socketId}
                   username={user.username}
                   color={user.color}
+                  socketId={user.socketId}
+                  mySocketId={socketRef?.id}
+                  isAdmin={isAdmin}
+                  onKick={kickUser}
                 />
               ))}
             </div>
@@ -177,7 +244,13 @@ const EditorPage = () => {
       {/* right editor */}
       <div className="bg-zinc-900 flex-1 p-6 flex flex-col h-full overflow-hidden">
         <div className="flex-1 overflow-hidden">
-          <Editor setUsers={setUsers} />
+          <CodeEditor
+            setUsers={setUsers}
+            setIsAdmin={setIsAdmin}
+            setSocketRef={setSocketRef}
+            setJoinRequests={setJoinRequests}
+          />
+
           {/* or <CodeMirrorEditor /> */}
         </div>
       </div>
