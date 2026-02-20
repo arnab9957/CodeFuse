@@ -12,7 +12,7 @@ loader.config({
   paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs" },
 });
 
-const CodeEditor = ({ setUsers }) => {
+const CodeEditor = ({ setUsers, setIsAdmin, setSocketRef, setJoinRequests }) => {
   const socketRef = useRef(null);
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
@@ -33,6 +33,7 @@ const CodeEditor = ({ setUsers }) => {
   const [chatInput, setChatInput] = useState("");
   // Store remote cursors: { [socketId]: { username, color, lineNumber, column } }
   const [remoteCursors, setRemoteCursors] = useState({});
+  const [isApproved, setIsApproved] = useState(false);
 
   const username = location.state?.username;
 
@@ -180,15 +181,39 @@ const CodeEditor = ({ setUsers }) => {
     socketRef.current.on("connect_failed", handleError);
 
     socketRef.current.on("connect", () => {
-      console.log("socket connected:", socketRef.current.id);
-      toast.success("Connected to server");
+      // console.log("socket connected:", socketRef.current.id);
+      // toast.success("Connected to server");
 
-      socketRef.current.emit("join", {
+      socketRef.current.emit("request-join", {
         roomId,
         username,
       });
     });
 
+    //Moved outside connect (no duplicate listeners)
+    socketRef.current.on("waiting-for-approval", () => {
+      toast.info("Waiting for admin approval...");
+    });
+
+    socketRef.current.on("join-approved", ({ isAdmin }) => {
+      setIsApproved(true);
+      toast.success(isAdmin ? "You are the admin" : "Join approved");
+      setIsAdmin(isAdmin);
+    });
+    socketRef.current.on("join-request", ({ username, socketId }) => {
+      console.log("JOin request received", username)
+      setJoinRequests((prev) => [...prev, { username, socketId }]);
+    });
+
+    socketRef.current.on("join-denied", () => {
+      toast.error("Admin denied your request");
+      navigate("/");
+    });
+
+    socketRef.current.on("room-closed", () => {
+      toast.error("Admin left. Room closed.");
+      navigate("/");
+    });
     socketRef.current.on(
       "joined",
       ({ clients, username: joinedUser, socketId }) => {
@@ -236,6 +261,10 @@ const CodeEditor = ({ setUsers }) => {
         languageRef.current = syncedLanguage;
       }
     });
+    socketRef.current.on("removed-by-admin", () => {
+      toast.error("You were removed by the admin.");
+      navigate("/");
+    });
 
     socketRef.current.on("language-changed", ({ language: newLanguage }) => {
       if (!newLanguage) return;
@@ -262,7 +291,6 @@ const CodeEditor = ({ setUsers }) => {
     socketRef.current.on(
       "cursor-change",
       ({ socketId, cursor, username: cursorUser, color }) => {
-        // Expecting cursor to be { lineNumber, column }
         setRemoteCursors((prev) => ({
           ...prev,
           [socketId]: { ...cursor, username: cursorUser, color },
@@ -276,23 +304,24 @@ const CodeEditor = ({ setUsers }) => {
         delete updated[socketId];
         return updated;
       });
-      // Remove style tag
       const style = document.getElementById(`style-${socketId}`);
       if (style) style.remove();
     });
+    setSocketRef(socketRef.current);
 
     return () => {
-      if (socketRef.current) {
+      if (socketRef.current?.connected) {
         console.log("disconnecting socket:", socketRef.current.id);
         socketRef.current.disconnect();
-        socketRef.current = null;
       }
     };
-  }, [roomId, username, setUsers]);
+  }, [roomId, username, setUsers, navigate]);
 
   if (!location.state) {
     return <Navigate to="/" state={{ roomId }} />;
   }
+ 
+
 
   // --- Handlers ---
 
@@ -369,6 +398,13 @@ const CodeEditor = ({ setUsers }) => {
 
     setChatInput("");
   };
+  if (!isApproved) {
+    return (
+      <div className="h-full w-full flex items-center justify-center text-white">
+        Waiting for admin approval...
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full flex flex-col gap-4">
