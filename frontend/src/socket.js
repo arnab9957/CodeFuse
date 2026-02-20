@@ -5,13 +5,21 @@ import { io } from 'socket.io-client';
 
 
 export const initSocket =  () => {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  
+  if (!backendUrl) {
+    console.error('VITE_BACKEND_URL environment variable is not set');
+    throw new Error('Backend URL is not configured. Please set VITE_BACKEND_URL in your environment variables.');
+  }
+
   const options = {
     forceNew: true,
     reconnectionAttempts: Infinity,
     timeout: 10000,
     transports: ["websocket"],
   };
-  console.log("Socket URL:", import.meta.env.VITE_BACKEND_URL);
+  
+  console.log("Socket URL:", backendUrl);
 
-  return io(import.meta.env.VITE_BACKEND_URL, options);
+  return io(backendUrl, options);
 };

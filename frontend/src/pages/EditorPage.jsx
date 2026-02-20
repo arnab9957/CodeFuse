@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
 
 const EditorPage = () => {
+  const [user, setUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [showSessionManager, setShowSessionManager] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);

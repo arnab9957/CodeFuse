@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Editor, { loader } from "@monaco-editor/react";
 import { initSocket } from "../socket";
-import { useLocation, useParams, Navigate } from "react-router-dom";
+import { useLocation, useParams, Navigate, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
 import Select from "./Select";
@@ -18,6 +18,7 @@ const CodeEditor = ({ setUsers, setIsAdmin, setSocketRef, setJoinRequests }) => 
   const monacoRef = useRef(null);
   const { roomId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Refs for mute/state management to prevent loops
   const isRemoteUpdate = useRef(false);
@@ -175,7 +176,14 @@ const CodeEditor = ({ setUsers, setIsAdmin, setSocketRef, setJoinRequests }) => 
     };
 
     if (socketRef.current) return;
-    socketRef.current = initSocket();
+    
+    try {
+      socketRef.current = initSocket();
+    } catch (error) {
+      console.error("Failed to initialize socket:", error);
+      toast.error("Failed to connect to server: " + error.message);
+      return;
+    }
 
     socketRef.current.on("connect_error", handleError);
     socketRef.current.on("connect_failed", handleError);
