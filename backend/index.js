@@ -6,11 +6,11 @@ import path from "node:path";
 import { Server } from "socket.io";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 import userRoutes from "./routes/userRoutes.js";
 
 dotenv.config();
-
-import cors from "cors";
 const app = express();
 
 app.use(
