@@ -30,6 +30,7 @@ const CodeEditor = ({ setUsers, setIsAdmin, setSocketRef, setJoinRequests }) => 
   const [code, setCode] = useState("/*write your code here !!!*/");
   const [language, setLanguage] = useState("javascript");
   const [theme, setTheme] = useState("vs-dark");
+  const [wordWrap, setWordWrap] = useState("on");
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   // Store remote cursors: { [socketId]: { username, color, lineNumber, column } }
@@ -176,7 +177,7 @@ const CodeEditor = ({ setUsers, setIsAdmin, setSocketRef, setJoinRequests }) => 
     };
 
     if (socketRef.current) return;
-    
+
     try {
       socketRef.current = initSocket();
     } catch (error) {
@@ -328,7 +329,7 @@ const CodeEditor = ({ setUsers, setIsAdmin, setSocketRef, setJoinRequests }) => 
   if (!location.state) {
     return <Navigate to="/" state={{ roomId }} />;
   }
- 
+
 
 
   // --- Handlers ---
@@ -384,6 +385,26 @@ const CodeEditor = ({ setUsers, setIsAdmin, setSocketRef, setJoinRequests }) => 
     setTheme(newTheme);
   };
 
+  const handleFormat = () => {
+    editorRef.current?.getAction("editor.action.formatDocument").run();
+  };
+
+  const handleZoomIn = () => {
+    editorRef.current?.getAction("editor.action.fontZoomIn").run();
+  };
+
+  const handleZoomOut = () => {
+    editorRef.current?.getAction("editor.action.fontZoomOut").run();
+  };
+
+  const handleZoomReset = () => {
+    editorRef.current?.getAction("editor.action.fontZoomReset").run();
+  };
+
+  const toggleWordWrap = () => {
+    setWordWrap((prev) => (prev === "on" ? "off" : "on"));
+  };
+
   const handleEditorWillMount = (monaco) => {
     // Define custom themes
     monaco.editor.defineTheme("dracula", customThemes.dracula);
@@ -437,9 +458,53 @@ const CodeEditor = ({ setUsers, setIsAdmin, setSocketRef, setJoinRequests }) => 
             />
           </div>
         </div>
-        <span className="text-zinc-400">
-          Monaco Editor · Real-time sync · Live cursors
-        </span>
+        <div className="flex items-center gap-1 bg-zinc-800/50 p-1 rounded-lg border border-zinc-700">
+          <button
+            onClick={toggleWordWrap}
+            className={`p-1.5 rounded-md transition-colors ${wordWrap === "on" ? "bg-indigo-600 text-white" : "text-zinc-400 hover:text-white hover:bg-zinc-700"}`}
+            title="Toggle Word Wrap"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
+          </button>
+          <div className="w-px h-4 bg-zinc-700 mx-1"></div>
+          <button
+            onClick={handleFormat}
+            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-md transition-colors"
+            title="Format Code"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+          </button>
+          <div className="w-px h-4 bg-zinc-700 mx-1"></div>
+          <button
+            onClick={handleZoomOut}
+            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-md transition-colors"
+            title="Zoom Out"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            </svg>
+          </button>
+          <button
+            onClick={handleZoomReset}
+            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-md transition-colors text-xs font-semibold"
+            title="Reset Zoom"
+          >
+            100%
+          </button>
+          <button
+            onClick={handleZoomIn}
+            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-md transition-colors"
+            title="Zoom In"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-1 gap-4 overflow-hidden">
@@ -455,7 +520,7 @@ const CodeEditor = ({ setUsers, setIsAdmin, setSocketRef, setJoinRequests }) => 
             options={{
               minimap: { enabled: false },
               fontSize: 14,
-              wordWrap: "on",
+              wordWrap: wordWrap,
               automaticLayout: true,
               padding: { top: 20, bottom: 20 },
             }}
