@@ -9,6 +9,8 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import userRoutes from "./routes/userRoutes.js";
+import oauthRoutes from "./routes/oAuthRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -44,6 +46,8 @@ app.use(express.json());
 
 // Routes
 app.use("/api/users", userRoutes);
+app.use("/api/oauth", oauthRoutes);
+app.use("/api/ai", aiRoutes);
 
 // serve frontend
 app.use(express.static(path.join(__dirname, "public")));
